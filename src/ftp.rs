@@ -383,11 +383,14 @@ impl FtpStream {
             let mut data_stream = BufReader::new(try!(self.data_command(&cmd)));
             try!(self.read_response_in(&[open_code, status::ALREADY_OPEN]));
 
-            let mut line = String::new();
+            let mut line = Vec::new();
             loop {
-                match data_stream.read_to_string(&mut line) {
+                match data_stream.read_to_end(&mut line) {
                     Ok(0) => break,
-                    Ok(_) => lines.extend(line.split("\r\n").into_iter().map(|s| String::from(s)).filter(|s| s.len() > 0)),
+                    Ok(_) => {
+                        let line = String::from_utf8_lossy(&line);
+                        lines.extend(line.split("\r\n").into_iter().map(|s| String::from(s)).filter(|s| s.len() > 0))
+                    },
                     Err(err) => return Err(FtpError::ConnectionError(err)),
                 };
             }
